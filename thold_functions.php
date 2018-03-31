@@ -3276,11 +3276,11 @@ function thold_check_baseline($local_data_id, $name, $current_value, &$thold_dat
 		$blt_high = '';
 
 		if ($thold_data['bl_pct_down'] != '') {
-			$blt_low  = $ref_value_min - ($ref_value_min * $thold_data['bl_pct_down'] / 100);
+			$blt_low  = $ref_value_min - (abs($ref_value_min) * $thold_data['bl_pct_down'] / 100);
 		}
 
 		if ($thold_data['bl_pct_up'] != '') {
-			$blt_high = $ref_value_max + ($ref_value_max * $thold_data['bl_pct_up'] / 100);
+			$blt_high = $ref_value_max + (abs($ref_value_max) * $thold_data['bl_pct_up'] / 100);
 		}
 
 		// Cache the calculated or empty values
@@ -3290,14 +3290,13 @@ function thold_check_baseline($local_data_id, $name, $current_value, &$thold_dat
 
 		$failed = 0;
 
-		// Check low boundary
-		if ($blt_low != '' && $current_value < $blt_low) {
-			$failed = 1;
-		}
-
-		// Check up boundary
-		if ($failed == 0 && $blt_high != '' && $current_value > $blt_high) {
+		// Check current value is within boundaries
+		if ($blt_high != '' && $current_value > $blt_high) {
+			// Failed upper boundary
 			$failed = 2;
+		} else if ($blt_low != '' && $current_value < $blt_low) {
+			// Failed lower boundary
+			$failed = 1;
 		}
 	}
 
