@@ -1824,7 +1824,7 @@ function thold_check_threshold(&$thold_data) {
 	}
 
 	$local_graph_id = $thold_data['local_graph_id'];
-
+	$local_data_id = $thold_data['local_data_id'];
 
 	$h = array();
 	if (isset($thold_data['hostname'])) {

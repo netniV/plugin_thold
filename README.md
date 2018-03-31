@@ -37,6 +37,7 @@ The thold plugin has been in development for well over a decade with increasing 
 ## ChangeLog
 --- 1.0.5 ---
 * issue#147: Make baseline deviation work with negative values
+* issue#174: Undefined variable $local_data_id in thold_check_function()
 
 --- 1.0.4 ---
 * issue#117: ERROR: possible illegal string offset when sending mails
