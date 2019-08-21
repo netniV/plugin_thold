@@ -3661,6 +3661,7 @@ function thold_modify_values_by_cdef(&$thold_data) {
 		$thold_data['time_warning_hi']  = thold_build_cdef($cdef, $thold_data['time_warning_hi'], $thold_data['local_data_id'], $thold_data['data_template_rrd_id']);
 		$thold_data['time_warning_low'] = thold_build_cdef($cdef, $thold_data['time_warning_low'], $thold_data['local_data_id'], $thold_data['data_template_rrd_id']);
 	}
+}
 
 function thold_get_column_by_cdef(&$thold_data, $column = 'lastread') {
 	// Check is the graph item has a cdef
@@ -3840,7 +3841,6 @@ function ack_logging($thold_id, $desc = '') {
 
 		syslog($thold_data['syslog_priority'], 'Threshold ' . $thold_id . ' has been acknowledged. Additional Comments: ' . $desc);
 	}
-}
 
 	$status = 99;
 
