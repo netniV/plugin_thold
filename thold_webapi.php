@@ -340,6 +340,7 @@ function thold_wizard() {
 		);
 
 		$host_ids = array();
+		$in_sql = array();
 
 		if ($thold_template_id != '') {
 			/* display the host dropdown */
@@ -450,6 +451,10 @@ function thold_wizard() {
 				$host_ids = array('0');
 			}
 
+			if (!cacti_sizeof($in_sql)) {
+				$in_sql[] = 'NULL';
+			}
+
 			if (!$data_query_id) {
 				$gr_sql = 'SELECT gt.id, gt.name
 					FROM graph_templates AS gt
@@ -542,6 +547,9 @@ function thold_wizard() {
 				'array' => $available_items,
 				'default' => ''
 			);
+		} else {
+			$local_graph_id       = 0;
+			$data_template_rrd_id = 0;
 		}
 
 		if ($data_query_id) {
@@ -659,7 +667,7 @@ function thold_wizard() {
 			);
 		}
 
-		if ($local_graph_id != '') {
+		if ($local_graph_id != '' && $host_id > 0) {
 			$dt_sql = 'SELECT DISTINCT dtr.local_data_id
 				FROM data_template_rrd AS dtr
 				LEFT JOIN graph_templates_item AS gti
@@ -691,6 +699,9 @@ function thold_wizard() {
 				'method' => 'hidden',
 				'value' => $local_data_id
 			);
+		} else {
+			$local_graph_id       = 0;
+			$data_template_rrd_id = 0;
 		}
 
 		top_header();
