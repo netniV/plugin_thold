@@ -1,7 +1,7 @@
 <?php
 /*
  +-------------------------------------------------------------------------+
- | Copyright (C) 2006-2019 The Cacti Group                                 |
+ | Copyright (C) 2006-2020 The Cacti Group                                 |
  |                                                                         |
  | This program is free software; you can redistribute it and/or           |
  | modify it under the terms of the GNU General Public License             |
@@ -69,7 +69,6 @@ if (sizeof($parms)) {
 			case '-h':
 				display_help();
 				exit;
-			exit(-1);
 			default:
 				print 'ERROR: Invalid Parameter ' . $parameter . PHP_EOL . PHP_EOL;
 				display_help();

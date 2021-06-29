@@ -2,7 +2,7 @@
 <?php
 /*
  +-------------------------------------------------------------------------+
- | Copyright (C) 2006-2019 The Cacti Group                                 |
+ | Copyright (C) 2006-2020 The Cacti Group                                 |
  |                                                                         |
  | This program is free software; you can redistribute it and/or           |
  | modify it under the terms of the GNU General Public License             |
@@ -23,7 +23,7 @@
  +-------------------------------------------------------------------------+
 */
 
-/* tick use required as of PHP 4.3.0 to accomodate signal handling */
+/* tick use required as of PHP 4.3.0 to accommodate signal handling */
 declare(ticks = 1);
 
 /* sig_handler - provides a generic means to catch exceptions to the Cacti log.
@@ -38,11 +38,11 @@ function sig_handler($signo) {
 		if (read_config_option('remote_storage_method') == 1) {
 			db_execute_prepared('DELETE FROM plugin_thold_daemon_processes
 				WHERE poller_id = ?',
-				array($config['poller_id']));
+				array($config['poller_id']), false);
 
 			db_execute_prepared('DELETE FROM plugin_thold_daemon_data
 				WHERE poller_id = ?',
-				array($config['poller_id']));
+				array($config['poller_id']), false);
 
 			if ($config['poller_id'] == 1) {
 				db_execute('UPDATE thold_data AS td
@@ -50,7 +50,7 @@ function sig_handler($signo) {
 					ON td.host_id = h.id
 					SET td.thold_daemon_pid = ""
 					WHERE (h.poller_id = 1 OR h.poller_id IS NULL)
-					AND td.thold_daemon_pid != ""');
+					AND td.thold_daemon_pid != ""', false);
 			} else {
 				db_execute_prepared('UPDATE thold_data AS td
 					LEFT JOIN host AS h
@@ -58,23 +58,22 @@ function sig_handler($signo) {
 					SET td.thold_daemon_pid = ""
 					WHERE poller_id = ?
 					AND td.thold_daemon_pid != ""',
-					array($config['poller_id']));
+					array($config['poller_id']), false);
 			}
 		} else {
-			db_execute('TRUNCATE plugin_thold_daemon_processes');
+			db_execute('TRUNCATE plugin_thold_daemon_processes', false);
 
-			db_execute('TRUNCATE plugin_thold_daemon_data');
+			db_execute('TRUNCATE plugin_thold_daemon_data', false);
 
 			db_execute('UPDATE thold_data
 				SET thold_daemon_pid = ""
-				WHERE thold_daemon_pid != ""');
+				WHERE thold_daemon_pid != ""', false);
 		}
 
 		cacti_log('WARNING: Thold Daemon Process (' . getmypid() . ') terminated by user', false, 'THOLD');
 
 		exit;
 
-		break;
 	default:
 		/* ignore all other signals */
 	}
@@ -94,8 +93,8 @@ error_reporting(E_ALL);
 /* allow the script to hang around waiting for connections. */
 set_time_limit(0);
 
-/* we do not need so much memory */
-ini_set('memory_limit', '256M');
+ini_set('memory_limit', '800M');
+ini_set('max_execution_time', '-1');
 
 $no_http_headers = true;
 
@@ -113,11 +112,12 @@ if (function_exists('pcntl_signal')) {
 
 global $cnn_id, $config;
 
+$debug      = false;
+$foreground = false;
+
 /* process calling arguments */
 $parms = $_SERVER['argv'];
 array_shift($parms);
-$debug      = false;
-$foreground = false;
 
 if (sizeof($parms)) {
 	foreach ($parms as $parameter) {
@@ -148,7 +148,6 @@ if (sizeof($parms)) {
 			case '-H':
 				display_help();
 				exit;
-			exit;
 			default:
 				print 'ERROR: Invalid Parameter ' . $parameter . "\n\n";
 				display_help();
@@ -195,7 +194,7 @@ if (!$foreground) {
 		} elseif ($pid == 0) {
 			// We are the child
 		} else {
-			cacti_log('NOTE: Thold Daemon Started on ' . gethostname(), false, 'THOLD');;
+			cacti_log('NOTE: Thold Daemon Started on ' . gethostname(), false, 'THOLD');
 
 			// We are the parent, output and exit
 			print '[OK]' . PHP_EOL;
@@ -254,6 +253,8 @@ $queued_processes = 0;
 
 while (true) {
 	if (thold_db_connection()) {
+		set_config_option('thold_daemon_heartbeat', microtime(true));
+
 		// Initiate concurrent background processes as long as we do not hit the limits
 		if (read_config_option('remote_storage_method') == 1) {
 			$queue = db_fetch_assoc_prepared('SELECT *
@@ -309,7 +310,7 @@ while (true) {
 
 					$process = '-q ' . $config['base_path'] . '/plugins/thold/thold_process.php --pid=' . $pid . ' > /dev/null';
 
-					thold_debug('Starting process: ' . $path_php_binary . ' -q ' . $process, false, 'THOLD');
+					thold_debug('Starting process: ' . $path_php_binary . ' -q ' . $process);
 
 					exec_background($path_php_binary, $process);
 					$launched++;
@@ -339,7 +340,7 @@ function thold_db_connection(){
 
 		$cacti_version = db_fetch_cell('SELECT cacti FROM version');
 
-		// Restore Cactis Error handler
+		// Restore Cacti's Error handler
 		restore_error_handler();
 		set_error_handler('CactiErrorHandler');
 
@@ -365,7 +366,7 @@ function thold_db_reconnect($cnn_id = null) {
 	// Connect to the database server
 	$cnn_id = db_connect_real($database_hostname, $database_username, $database_password, $database_default, $database_type, $database_port, $database_ssl);
 
-	// Restore Cactis Error handler
+	// Restore Cacti's Error handler
 	restore_error_handler();
 	set_error_handler('CactiErrorHandler');
 

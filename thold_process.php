@@ -1,7 +1,7 @@
 <?php
 /*
  +-------------------------------------------------------------------------+
- | Copyright (C) 2006-2019 The Cacti Group                                 |
+ | Copyright (C) 2006-2020 The Cacti Group                                 |
  |                                                                         |
  | This program is free software; you can redistribute it and/or           |
  | modify it under the terms of the GNU General Public License             |
@@ -111,7 +111,6 @@ if (sizeof($parms)) {
 			case '-H':
 				display_help();
 				exit;
-			exit;
 			default:
 				print 'ERROR: Invalid Parameter ' . $parameter . "\n\n";
 				display_help();
@@ -142,7 +141,7 @@ usleep(1);
 if (read_config_option('remote_storage_method') == 1) {
 	$sql_query = "SELECT tdd.id, tdd.rrd_reindexed, tdd.rrd_time_reindexed,
 		td.id AS thold_id, td.name_cache AS thold_name, td.local_graph_id,
-		td.percent_ds, td.expression, td.data_type, td.cdef, td.local_data_id,
+		td.percent_ds, td.expression, td.upper_ds, td.data_type, td.cdef, td.local_data_id,
 		td.data_template_rrd_id, td.lastread,
 		UNIX_TIMESTAMP(td.lasttime) AS lasttime, td.oldvalue,
 		dtr.data_source_name AS name, dtr.data_source_type_id,
@@ -162,7 +161,7 @@ if (read_config_option('remote_storage_method') == 1) {
 } else {
 	$sql_query = "SELECT tdd.id, tdd.rrd_reindexed, tdd.rrd_time_reindexed,
 		td.id AS thold_id, td.name_cache AS thold_name, td.local_graph_id,
-		td.percent_ds, td.expression, td.data_type, td.cdef, td.local_data_id,
+		td.percent_ds, td.expression, td.upper_ds, td.data_type, td.cdef, td.local_data_id,
 		td.data_template_rrd_id, td.lastread,
 		UNIX_TIMESTAMP(td.lasttime) AS lasttime, td.oldvalue,
 		dtr.data_source_name AS name, dtr.data_source_type_id,
@@ -211,6 +210,11 @@ if (cacti_sizeof($tholds)) {
 				$currentval = thold_calculate_expression($thold_data, $currentval, $rrd_reindexed, $rrd_time_reindexed);
 			}
 			break;
+		case 4:
+			if ($thold_data['upper_ds'] != '') {
+				$currentval = thold_calculate_lower_upper($thold_data, $currentval, $rrd_reindexed);
+			}
+			break;
 		}
 
 		if (is_numeric($currentval)) {
@@ -223,6 +227,10 @@ if (cacti_sizeof($tholds)) {
 			$lasttime = $item[$thold_data['name']];
 		} else {
 			$lasttime = $currenttime - $thold_data['rrd_step'];
+		}
+
+		if ($thold_data['data_type'] == 1 && !empty($thold_data['cdef'])) {
+			$lasttime = thold_build_cdef($thold_data['cdef'], $lasttime, $thold_data['local_data_id'], $thold_data['data_template_rrd_id']);
 		}
 
 		db_execute_prepared('UPDATE thold_data

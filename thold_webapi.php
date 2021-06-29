@@ -1,7 +1,7 @@
 <?php
 /*
  +-------------------------------------------------------------------------+
- | Copyright (C) 2006-2019 The Cacti Group                                 |
+ | Copyright (C) 2006-2020 The Cacti Group                                 |
  |                                                                         |
  | This program is free software; you can redistribute it and/or           |
  | modify it under the terms of the GNU General Public License             |
@@ -634,17 +634,37 @@ function thold_wizard() {
 			$hiql = ' AND 0 = 1';
 		}
 
-		$form_array['my_host_id'] = array(
-			'method' => 'drop_callback',
-			'friendly_name' => __('Device', 'thold'),
-			'description' => __('Select a Device to use for the Threshold and Graph to be created.', 'thold'),
-			'on_change' => 'applyTholdFilter()',
-			'action' => 'ajax_hosts',
-			'id' => $host_id,
-			'sql' => 'SELECT id, description AS name FROM host WHERE disabled!="" AND deleted!=""' . $hiql,
-			'value' => db_fetch_cell_prepared('SELECT description FROM host WHERE id = ?', array($host_id)),
-			'none_value' => __('Select a Device', 'thold')
-		);
+		if (get_selected_theme() != 'classic') {
+			$form_array['my_host_id'] = array(
+				'method' => 'drop_callback',
+				'friendly_name' => __('Device', 'thold'),
+				'description' => __('Select a Device to use for the Threshold and Graph to be created.', 'thold'),
+				'on_change' => 'applyTholdFilter()',
+				'action' => 'ajax_hosts',
+				'id' => $host_id,
+				'sql' => 'SELECT id, description AS name FROM host WHERE disabled != "" AND deleted != ""' . $hiql,
+				'value' => db_fetch_cell_prepared('SELECT description FROM host WHERE id = ?', array($host_id)),
+				'none_value' => __('Select a Device', 'thold')
+			);
+		} else {
+			if ($hiql == ' AND 0 = 1') {
+				$hiql = '';
+			}
+
+			$hosts = array_rekey(get_allowed_devices($hiql),
+				'id', 'description'
+			);
+
+			$form_array['my_host_id'] = array(
+				'method' => 'drop_array',
+				'friendly_name' => __('Device', 'thold'),
+				'description' => __('Select a Device to use for the Threshold and Graph to be created.', 'thold'),
+				'on_change' => 'applyTholdFilter()',
+				'array' => $hosts,
+				'value' => $host_id,
+				'none_value' => __('Select a Device', 'thold')
+			);
+		}
 
 		if ($host_id > 0) {
 			$graphs = get_allowed_graphs('gl.host_id=' . $host_id);
@@ -756,7 +776,7 @@ function thold_wizard() {
 	if ($local_graph_id > 0) {
 		html_start_box(__('Selected Graph', 'thold'), '100%', '', '3', 'center', '');
 
-		print "<tr><td class='center'><p><img class='center' id='graphi' style='max-width:700px;' src='../../graph_image.php?local_graph_id=$local_graph_id&rra_id=0'></p></td></tr>";
+		print "<tr><td class='center'><p><img class='center' id='graphi' style='max-width:700px;' src='" . $config['url_path'] . "graph_image.php?local_graph_id=$local_graph_id&rra_id=0'></p></td></tr>";
 
 		html_end_box();
 	}
@@ -936,7 +956,7 @@ function thold_new_graphs_save($host_id) {
 				$return_array = create_complete_graph_from_template($graph_template_id, $host_id, '', $values['cg']);
 
 				if (cacti_sizeof($return_array)) {
-					thold_raise_message(__('Created graph: %s', html_escape(get_graph_title($return_array['local_graph_id'])), 'thold'), MESSAGE_LEVEL_INFO);
+					thold_raise_message(__esc('Created graph: %s', get_graph_title($return_array['local_graph_id']), 'thold'), MESSAGE_LEVEL_INFO);
 					/* lastly push host-specific information to our data sources */
 					foreach ($return_array['local_data_id'] as $item) {
 						push_out_host($host_id, $item);
@@ -946,10 +966,10 @@ function thold_new_graphs_save($host_id) {
 				foreach($snmp_index_array as $snmp_index => $true) {
 					$snmp_query_array['snmp_index'] = decode_data_query_index($snmp_index, $snmp_query_array['snmp_query_id'], $host_id);
 
-					$return_array = create_complete_graph_from_template($graph_template_id, $host_id, $snmp_query_array, $values['sg']{$snmp_query_array['snmp_query_id']});
+					$return_array = create_complete_graph_from_template($graph_template_id, $host_id, $snmp_query_array, $values['sg'][$snmp_query_array['snmp_query_id']]);
 
 					if (cacti_sizeof($return_array)) {
-						thold_raise_message(__('Created graph: %s', html_escape(get_graph_title($return_array['local_graph_id'])), 'thold'), MESSAGE_LEVEL_INFO);
+						thold_raise_message(__esc('Created graph: %s', get_graph_title($return_array['local_graph_id']), 'thold'), MESSAGE_LEVEL_INFO);
 						/* lastly push host-specific information to our data sources */
 						foreach ($return_array['local_data_id'] as $item) {
 							push_out_host($host_id, $item);
